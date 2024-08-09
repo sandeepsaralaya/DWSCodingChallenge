@@ -1,5 +1,5 @@
 ## Approach to handle dead lock scenario and to achieve Thread safety for transfer money feature 
-  Synchronizing whole method : 
+  Synchronizing whole transferMoney method : 
     Naive approach was to put whole transferMoney method as Synchronized but this would lead to slow performance as even if transactions related to different accounts have to wait and cant run in parallely.
   Acquiring Lock on From and To Account Objects 
     Here we will acquire lock on both from account and toaccount to achieve non interrupted transaction.
