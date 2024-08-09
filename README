@@ -1,0 +1,23 @@
+## Approach to handle dead lock scenario and to achieve Thread safety for transfer money feature 
+  Synchronizing whole method : 
+    Naive approach was to put whole transferMoney method as Synchronized but this would lead to slow performance as even if transactions related to different accounts have to wait and cant run in parallely.
+  Acquiring Lock on From and To Account Objects 
+    Here we will acquire lock on both from account and toaccount to achieve non interrupted transaction.
+    But simply acquiring locks in nested format might lead to dead lock scenario for ex 2 request comes one A->B and other B->A , so thread 1 acquires lock on A and waiting for B , because Thread 2 acuired lock on B and waiting for A.
+    To resolve this my approach ia to always order two accounts and acquire lock on smaller one first and then larger account , here i used account id to compare accounts . 
+    So even if A->B and B->A comes parallel , both threads will try to aquire lock for A first which would lead to success for one thread and waiting state for other. 
+
+
+## Items to do before moving it to production : 
+  Load/performance testing by triggering parallel request from  Testing tools like JMeter etc. 
+  Thorough testing (functional) on Parallel transaction scenario for same account
+  In Production system if we are using DB instead of inmemory map , debit and credit operation should be done as a transaction .
+  Setting up proper Alarms for transaction failure scenario in Monitoring apps like cloudwatch/splunk 
+
+## Assumption i made :
+  Transfer with same account as from and to accounts is not possible. 
+  Transfer with Amount 0 is allowed.
+
+#Note:
+  Here i have not called repository again to put updated object into map again as actual object gets updated,which will automatically reflected in map , but ideally if we are dealing with DB , there would have been update(account) call to repository for updating data in db after transaction.
+
