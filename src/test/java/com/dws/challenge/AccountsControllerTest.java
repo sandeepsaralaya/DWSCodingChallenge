@@ -10,7 +10,10 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 import java.math.BigDecimal;
 
 import com.dws.challenge.domain.Account;
+import com.dws.challenge.domain.TransferRequest;
 import com.dws.challenge.service.AccountsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,4 +105,162 @@ class AccountsControllerTest {
       .andExpect(
         content().string("{\"accountId\":\"" + uniqueAccountId + "\",\"balance\":123.45}"));
   }
+  
+  @Test
+  void transferMoney() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"1";
+	    Account fromAccountInp = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"2";
+	    Account toAccountInp = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    
+	    this.accountsService.createAccount(fromAccountInp);
+	    this.accountsService.createAccount(toAccountInp);
+	    
+	    TransferRequest transferRequestObj=new TransferRequest(uniqueFromAccountId,uniqueToAccountId,new BigDecimal("50"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isCreated());
+
+    	Account fromAccount = accountsService.getAccount(uniqueFromAccountId);
+    	Account toAccount = accountsService.getAccount(uniqueToAccountId);
+    	
+    	assertThat(fromAccount.getAccountId()).isEqualTo(uniqueFromAccountId);
+    	assertThat(fromAccount.getBalance()).isEqualByComparingTo("50");
+    	
+    	assertThat(toAccount.getAccountId()).isEqualTo(uniqueToAccountId);
+    	assertThat(toAccount.getBalance()).isEqualByComparingTo("150");
+    	
+  }
+  
+  @Test
+  void transferMoneyInsufficientFund() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"3";
+	    Account fromAccountInp = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"4";
+	    Account toAccountInp = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    
+	    this.accountsService.createAccount(fromAccountInp);
+	    this.accountsService.createAccount(toAccountInp);
+	    
+	    TransferRequest transferRequestObj=new TransferRequest(uniqueFromAccountId,uniqueToAccountId,new BigDecimal("1000"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyNegativeTransferAmount() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"5";
+	    Account fromAccountInp = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"6";
+	    Account toAccountInp = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    
+	    this.accountsService.createAccount(fromAccountInp);
+	    this.accountsService.createAccount(toAccountInp);
+	    
+	    TransferRequest transferRequestObj=new TransferRequest(uniqueFromAccountId,uniqueToAccountId,new BigDecimal("-100"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneySameAccount() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"7";
+	    Account fromAccountInp = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(fromAccountInp);
+	    TransferRequest transferRequestObj=new TransferRequest(uniqueFromAccountId,uniqueFromAccountId,new BigDecimal("100"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyInvalidFromAccount() throws Exception {
+	  	String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"8";
+	    Account toAccount = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(toAccount);
+	    TransferRequest transferRequestObj=new TransferRequest("00000",uniqueToAccountId,new BigDecimal("100"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyInvalidToAccount() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"9";
+	    Account fromAccount = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(fromAccount);
+	    TransferRequest transferRequestObj=new TransferRequest(uniqueFromAccountId,"00000",new BigDecimal("100"));
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyNoFromAccount() throws Exception {
+	  	String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"10";
+	    Account toAccount = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(toAccount);
+	    TransferRequest transferRequestObj=new TransferRequest();
+	    transferRequestObj.setAmount(new BigDecimal("100"));
+	    transferRequestObj.setToAccountId(uniqueToAccountId);
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyNoToAccount() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"11";
+	    Account fromAccount = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(fromAccount);
+	    TransferRequest transferRequestObj=new TransferRequest();
+	    transferRequestObj.setAmount(new BigDecimal("100"));
+	    transferRequestObj.setFromAccountId(uniqueFromAccountId);
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyNoAmount() throws Exception {
+	  	String uniqueFromAccountId = "Id-" + System.currentTimeMillis()+"-"+"12";
+	    Account fromAccount = new Account(uniqueFromAccountId, new BigDecimal("100"));
+	    String uniqueToAccountId = "Id-" + System.currentTimeMillis()+"-"+"13";
+	    Account toAccount = new Account(uniqueToAccountId, new BigDecimal("100"));
+	    this.accountsService.createAccount(fromAccount);
+	    this.accountsService.createAccount(toAccount);
+	    TransferRequest transferRequestObj=new TransferRequest();
+	    transferRequestObj.setFromAccountId(uniqueFromAccountId);
+	    transferRequestObj.setToAccountId(uniqueToAccountId);
+	    ObjectMapper mapper = new ObjectMapper();  
+	    String tranferObjJsonStr=mapper.writeValueAsString(transferRequestObj);
+	    
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)
+      .content(tranferObjJsonStr)).andExpect(status().isBadRequest());
+  }
+  
+  @Test
+  void transferMoneyNoBody() throws Exception {
+    this.mockMvc.perform(post("/v1/accounts/transfer").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+  }
+  
+  
 }

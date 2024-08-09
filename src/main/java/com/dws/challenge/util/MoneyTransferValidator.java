@@ -11,7 +11,7 @@ public class MoneyTransferValidator {
 	public static void validateSenderBalance(Account fromAccount,BigDecimal amount)
 	{
 		if(fromAccount.getBalance().compareTo(amount)<0)
-			throw new TranserMoneyValidationException(Constants.INSUFFICIENT_FUNDS_ERROR_MESSAGE);
+			throw new TranserMoneyValidationException(Constants.INSUFFICIENT_BALANCE_ERROR_MESSAGE);
 	}
 	
 	// method validates accounts, if they are same or null thows TranserMoneyValidationException

@@ -49,7 +49,7 @@ public class AccountsService {
    * @Return void
    * @throws TranserMoneyValidationException if any validation error found
    */
-  public void transferMoney(TransferRequest transferRequest) throws TranserMoneyValidationException
+  public void transferMoney(TransferRequest transferRequest) throws TranserMoneyValidationException, Exception
   { 
 	  	// lock object reference
 	    Account parentLockObject;
@@ -66,6 +66,10 @@ public class AccountsService {
 		Account[] ordredeAccounts=compareAcounts(fromAccount,toAccount);
 		parentLockObject=ordredeAccounts[0];
 		childLockObject=ordredeAccounts[1];
+		
+		// used for dead lock testing,to test dead lock scenario we can uncomment below line if we r working on single core machine
+		// Thread.currentThread().sleep(5L);
+		
 		
 		//acquiring ordered lock on from and to account to avoid dead lock and to process transfer without interruption
 		synchronized(parentLockObject)
@@ -94,7 +98,7 @@ public class AccountsService {
   private void debitMoney(Account fromAccount ,BigDecimal amount)
   {
 	  fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
-	  this.notificationService.notifyAboutTransfer(fromAccount,Constants.DEBIT_NOTIFICATION_MESSAGE+amount);
+	  this.notificationService.notifyAboutTransfer(fromAccount,Constants.DEBIT_NOTIFICATION_MESSAGE+amount+" "+Constants.CURRENT_BALANCE+fromAccount.getBalance());
   }
   
   /*
@@ -105,7 +109,7 @@ public class AccountsService {
   private void creditMoney(Account toAccount ,BigDecimal amount)
   {
 	  toAccount.setBalance(toAccount.getBalance().add(amount));
-	  this.notificationService.notifyAboutTransfer(toAccount,Constants.CREDIT_NOTIFICATION_MESSAGE+amount);
+	  this.notificationService.notifyAboutTransfer(toAccount,Constants.CREDIT_NOTIFICATION_MESSAGE+amount+" "+Constants.CURRENT_BALANCE+toAccount.getBalance());
   }
   
   /*
