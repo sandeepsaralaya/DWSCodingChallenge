@@ -12,5 +12,5 @@ public interface AccountsRepository {
   Account getAccount(String accountId);
 
   void clearAccounts();
-
+  
 }
